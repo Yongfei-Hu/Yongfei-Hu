@@ -1,0 +1,111 @@
+/**
+ * Generate the GitCode contribution snake animation (light + dark SVG).
+ *
+ * Pipeline mirrors snk's generate-snake-animation package, with the
+ * contribution source replaced by GitCode's events API:
+ *   gitcode events -> cells -> grid -> solver best route -> svg
+ *
+ * Usage:
+ *   GITCODE_TOKEN=xxx bun generator/run.ts [username]
+ * If username is omitted it is resolved from the token (GET /api/v5/user).
+ */
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+import { getGitcodeUserContribution, type Cell } from "./gitcode";
+import { getBestRoute } from "./vendor/solver/getBestRoute";
+import { getPathToPose } from "./vendor/solver/getPathToPose";
+import { createSvg, type DrawOptions } from "./vendor/svg-creator/index";
+import { snake4 } from "./vendor/types/__fixtures__/snake";
+import {
+  createEmptyGrid,
+  setColor,
+  setColorEmpty,
+  type Color,
+} from "./vendor/types/grid";
+
+const API_BASE = "https://api.gitcode.com/api/v5";
+
+// GitCode-blue dot palettes (analogous to snk's github / gitlab presets)
+const palettes = {
+  "gitcode-light": {
+    colorBackground: "#ffffff",
+    colorDotBorder: "#1b1f230a",
+    colorEmpty: "#ebedf0",
+    colorDots: ["#ebedf0", "#9dc7f1", "#428fdc", "#2f68b4", "#284779"],
+    colorSnake: "#f97316",
+  },
+  "gitcode-dark": {
+    colorBackground: "#0c1116",
+    colorDotBorder: "#1b1f230a",
+    colorEmpty: "#161b22",
+    colorDots: ["#161b22", "#0b2d4d", "#10467c", "#1a66b3", "#4da3ff"],
+    colorSnake: "#f97316",
+  },
+};
+
+const cellsToGrid = (cells: { x: number; y: number; level: number }[]) => {
+  const width = Math.max(0, ...cells.map((c) => c.x)) + 1;
+  const height = Math.max(0, ...cells.map((c) => c.y)) + 1;
+
+  const grid = createEmptyGrid(width, height);
+  for (const c of cells) {
+    if (c.level > 0) setColor(grid, c.x, c.y, c.level as Color);
+    else setColorEmpty(grid, c.x, c.y);
+  }
+  return grid;
+};
+
+const toDrawOptions = (p: (typeof palettes)["gitcode-light"]): DrawOptions => ({
+  colorDots: { 1: p.colorDots[1], 2: p.colorDots[2], 3: p.colorDots[3], 4: p.colorDots[4] } as DrawOptions["colorDots"],
+  colorEmpty: p.colorEmpty,
+  colorDotBorder: p.colorDotBorder,
+  colorSnake: p.colorSnake,
+  sizeCell: 16,
+  sizeDot: 12,
+  sizeDotBorderRadius: 2,
+});
+
+const resolveUsername = async (token: string) => {
+  const res = await fetch(`${API_BASE}/user?access_token=${token}`);
+  if (!res.ok) throw new Error(`gitcode user api: ${res.status}`);
+  const user = (await res.json()) as { login: string };
+  return user.login;
+};
+
+const main = async () => {
+  const token = process.env.GITCODE_TOKEN;
+  if (!token) throw new Error("GITCODE_TOKEN env var is required");
+
+  const username = process.argv[2] ?? (await resolveUsername(token));
+  console.log(`🎣 fetching gitcode contribution for ${username}`);
+
+  const cells: Cell[] = await getGitcodeUserContribution(username, { token });
+  const total = cells.reduce((s, c) => s + c.count, 0);
+  console.log(`📊 ${total} events in the last year`);
+
+  const grid = cellsToGrid(cells);
+  const snake = snake4;
+
+  console.log("📡 computing best route");
+  const chain = getBestRoute(grid, snake)!;
+  chain.push(...getPathToPose(chain.slice(-1)[0], snake)!);
+
+  const outDir = path.resolve(__dirname, "../dist");
+  fs.mkdirSync(outDir, { recursive: true });
+
+  for (const [name, palette] of Object.entries(palettes)) {
+    const suffix = name === "gitcode-dark" ? "-dark" : "";
+    const file = path.join(outDir, `gitcode-contribution-grid-snake${suffix}.svg`);
+    console.log(`🖌 creating ${file}`);
+    const svg = createSvg(grid, cells, chain, toDrawOptions(palette), {
+      stepDurationMs: 100,
+    });
+    fs.writeFileSync(file, svg);
+  }
+};
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
