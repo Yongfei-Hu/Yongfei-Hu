@@ -8,10 +8,11 @@ on:
   # allows to manually run the job at any time
   workflow_dispatch:
 
-  # run on every push on the main branch
+  # run on every push to any branch (except output, which is written by
+  # this workflow itself and would otherwise cause an endless loop)
   push:
-    branches:
-      - main
+    branches-ignore:
+      - output
 
 jobs:
   generate:
