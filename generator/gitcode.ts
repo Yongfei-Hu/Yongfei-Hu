@@ -15,6 +15,8 @@
  * Both require a personal access token (https://gitcode.com/setting/token).
  */
 
+import * as fs from "node:fs";
+
 export type Cell = {
   x: number;
   y: number;
@@ -144,8 +146,20 @@ export const getGitcodeUserContribution = async (
   start.setUTCDate(start.getUTCDate() - start.getUTCDay());
 
   const countsByDate: Record<string, number> = {};
-  await fetchEventCounts(userName, o.token, countsByDate);
-  await fetchCommitCounts(userName, o.token, start, countsByDate);
+
+  // When GITCODE_CALENDAR_JSON points to a dump of the official profile
+  // calendar (web-api .../contributions), trust it over the approximate
+  // events/commits reconstruction.
+  const calendarFile = process.env.GITCODE_CALENDAR_JSON;
+  if (calendarFile && fs.existsSync(calendarFile)) {
+    const data = JSON.parse(fs.readFileSync(calendarFile, "utf-8")) as Record<string, number>;
+    for (const [date, count] of Object.entries(data))
+      if (typeof count === "number") countsByDate[date] = count;
+    console.log(`📅 using official calendar from ${calendarFile}`);
+  } else {
+    await fetchEventCounts(userName, o.token, countsByDate);
+    await fetchCommitCounts(userName, o.token, start, countsByDate);
+  }
 
   const max = Math.max(0, ...Object.values(countsByDate));
 
