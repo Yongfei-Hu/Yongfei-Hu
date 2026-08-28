@@ -1,18 +1,18 @@
 /**
- * Generate the GitCode contribution snake animation (light + dark SVG).
+ * Generate the GitHub contribution snake animation (light + dark SVG).
  *
  * Pipeline mirrors snk's generate-snake-animation package, with the
- * contribution source replaced by GitCode's events API:
- *   gitcode events -> cells -> grid -> solver best route -> svg
+ * contribution source replaced by GitHub's public contribution calendar:
+ *   github contributions -> cells -> grid -> solver best route -> svg
  *
  * Usage:
- *   GITCODE_TOKEN=xxx bun generator/run.ts [username]
- * If username is omitted it is resolved from the token (GET /api/v5/user).
+ *   GITHUB_USER=xxx bun generator/run.ts
+ *   bun generator/run.ts [username]
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { getGitcodeUserContribution, type Cell } from "./gitcode";
+import { getGithubUserContribution, type Cell } from "./github";
 import { getBestRoute } from "./vendor/solver/getBestRoute";
 import { getPathToPose } from "./vendor/solver/getPathToPose";
 import { createSvg, type DrawOptions } from "./vendor/svg-creator/index";
@@ -23,8 +23,6 @@ import {
   setColorEmpty,
   type Color,
 } from "./vendor/types/grid";
-
-const API_BASE = "https://api.gitcode.com/api/v5";
 
 // GitCode-blue dot palettes (analogous to snk's github / gitlab presets)
 const palettes = {
@@ -66,21 +64,12 @@ const toDrawOptions = (p: (typeof palettes)["gitcode-light"]): DrawOptions => ({
   sizeDotBorderRadius: 2,
 });
 
-const resolveUsername = async (token: string) => {
-  const res = await fetch(`${API_BASE}/user?access_token=${token}`);
-  if (!res.ok) throw new Error(`gitcode user api: ${res.status}`);
-  const user = (await res.json()) as { login: string };
-  return user.login;
-};
-
 const main = async () => {
-  const token = process.env.GITCODE_TOKEN;
-  if (!token) throw new Error("GITCODE_TOKEN env var is required");
+  const username = process.env.GITHUB_USER ?? process.argv[2];
+  if (!username) throw new Error("GITHUB_USER env var or username arg is required");
+  console.log(`🎣 fetching github contribution for ${username}`);
 
-  const username = process.argv[2] ?? (await resolveUsername(token));
-  console.log(`🎣 fetching gitcode contribution for ${username}`);
-
-  const cells: Cell[] = await getGitcodeUserContribution(username, { token });
+  const cells: Cell[] = await getGithubUserContribution(username);
   const total = cells.reduce((s, c) => s + c.count, 0);
   console.log(`📊 ${total} events in the last year`);
 

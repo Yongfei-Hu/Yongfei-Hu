@@ -1,0 +1,52 @@
+name: generate-github-snake
+
+on:
+  # run automatically every day (UTC)
+  schedule:
+    - cron: "0 0 * * *"
+
+  # allows to manually run the job at any time
+  workflow_dispatch:
+
+  # run on every push to any branch (except output, which is written by
+  # this workflow itself and would otherwise cause an endless loop)
+  push:
+    branches-ignore:
+      - output
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # fetch the GitHub contribution calendar for the repository owner,
+      # solve the snake route with vendored snk code and emit svgs into dist/
+      - name: generate github-contribution-grid-snake.svg
+        env:
+          GITHUB_USER: ${{ github.repository_owner }}
+        run: |
+          npx -y tsx generator/run.ts
+
+      # publish the svgs to the output branch (history is force-overwritten,
+      # the branch only ever hosts the two svg files)
+      - name: push svgs to the output branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan output-publish
+          git rm -rf . > /dev/null 2>&1 || true
+          cp dist/*.svg .
+          git add *.svg
+          git commit -m "update snake svg" || { echo "no changes"; exit 0; }
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:output
