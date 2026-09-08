@@ -42,6 +42,18 @@ const palettes = {
   },
 };
 
+// Show roughly half of GitHub's one-year contribution calendar.
+const DISPLAY_WEEKS = 26;
+
+const takeRecentWeeks = (cells: Cell[]): Cell[] => {
+  const maxX = Math.max(0, ...cells.map((cell) => cell.x));
+  const firstX = Math.max(0, maxX - DISPLAY_WEEKS + 1);
+
+  return cells
+    .filter((cell) => cell.x >= firstX)
+    .map((cell) => ({ ...cell, x: cell.x - firstX }));
+};
+
 const cellsToGrid = (cells: { x: number; y: number; level: number }[]) => {
   const width = Math.max(0, ...cells.map((c) => c.x)) + 1;
   const height = Math.max(0, ...cells.map((c) => c.y)) + 1;
@@ -69,9 +81,9 @@ const main = async () => {
   if (!username) throw new Error("GITHUB_USER env var or username arg is required");
   console.log(`🎣 fetching github contribution for ${username}`);
 
-  const cells: Cell[] = await getGithubUserContribution(username);
+  const cells = takeRecentWeeks(await getGithubUserContribution(username));
   const total = cells.reduce((s, c) => s + c.count, 0);
-  console.log(`📊 ${total} events in the last year`);
+  console.log(`📊 ${total} events in the last ${DISPLAY_WEEKS} weeks`);
 
   const grid = cellsToGrid(cells);
   const snake = snake4;
