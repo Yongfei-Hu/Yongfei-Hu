@@ -44,7 +44,6 @@ const palettes = {
 
 // Show roughly half of GitHub's one-year contribution calendar.
 const DISPLAY_WEEKS = 26;
-const PROFILE_CANVAS_WIDTH = 880;
 
 const takeRecentWeeks = (cells: Cell[]): Cell[] => {
   const maxX = Math.max(0, ...cells.map((cell) => cell.x));
@@ -54,12 +53,6 @@ const takeRecentWeeks = (cells: Cell[]): Cell[] => {
     .filter((cell) => cell.x >= firstX)
     .map((cell) => ({ ...cell, x: cell.x - firstX }));
 };
-
-const keepProfileCanvasWidth = (svg: string): string =>
-  svg.replace(
-    /(<svg\b[^>]*\bwidth=")\d+("[^>]*>)/,
-    `$1${PROFILE_CANVAS_WIDTH}$2`,
-  );
 
 const cellsToGrid = (cells: { x: number; y: number; level: number }[]) => {
   const width = Math.max(0, ...cells.map((c) => c.x)) + 1;
@@ -106,11 +99,9 @@ const main = async () => {
     const suffix = name === "gitcode-dark" ? "-dark" : "";
     const file = path.join(outDir, `gitcode-contribution-grid-snake${suffix}.svg`);
     console.log(`🖌 creating ${file}`);
-    const svg = keepProfileCanvasWidth(
-      createSvg(grid, cells, chain, toDrawOptions(palette), {
-        stepDurationMs: 100,
-      }),
-    );
+    const svg = createSvg(grid, cells, chain, toDrawOptions(palette), {
+      stepDurationMs: 100,
+    });
     fs.writeFileSync(file, svg);
   }
 };
