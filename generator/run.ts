@@ -24,16 +24,16 @@ import {
   type Color,
 } from "./vendor/types/grid";
 
-// GitCode-blue dot palettes (analogous to snk's github / gitlab presets)
+// GitHub-blue dot palettes
 const palettes = {
-  "gitcode-light": {
+  "github-light": {
     colorBackground: "#ffffff",
     colorDotBorder: "#1b1f230a",
     colorEmpty: "#ebedf0",
     colorDots: ["#ebedf0", "#9dc7f1", "#428fdc", "#2f68b4", "#284779"],
     colorSnake: "#f97316",
   },
-  "gitcode-dark": {
+  "github-dark": {
     colorBackground: "#0c1116",
     colorDotBorder: "#1b1f230a",
     colorEmpty: "#161b22",
@@ -54,7 +54,7 @@ const cellsToGrid = (cells: { x: number; y: number; level: number }[]) => {
   return grid;
 };
 
-const toDrawOptions = (p: (typeof palettes)["gitcode-light"]): DrawOptions => ({
+const toDrawOptions = (p: (typeof palettes)["github-light"]): DrawOptions => ({
   colorDots: { 1: p.colorDots[1], 2: p.colorDots[2], 3: p.colorDots[3], 4: p.colorDots[4] } as DrawOptions["colorDots"],
   colorEmpty: p.colorEmpty,
   colorDotBorder: p.colorDotBorder,
@@ -84,8 +84,8 @@ const main = async () => {
   fs.mkdirSync(outDir, { recursive: true });
 
   for (const [name, palette] of Object.entries(palettes)) {
-    const suffix = name === "gitcode-dark" ? "-dark" : "";
-    const file = path.join(outDir, `gitcode-contribution-grid-snake${suffix}.svg`);
+    const suffix = name === "github-dark" ? "-dark" : "";
+    const file = path.join(outDir, `github-contribution-grid-snake${suffix}.svg`);
     console.log(`🖌 creating ${file}`);
     const svg = createSvg(grid, cells, chain, toDrawOptions(palette), {
       stepDurationMs: 100,
