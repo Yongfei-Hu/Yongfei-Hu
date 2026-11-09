@@ -1,24 +1,17 @@
 name: generate-github-snake
 
+# Paused at the repository owner's request.
+# Automatic schedule and push triggers are intentionally removed.
+# To resume, remove the job guard below and restore the desired triggers.
 on:
-  # run automatically every day (UTC)
-  schedule:
-    - cron: "0 0 * * *"
-
-  # allows to manually run the job at any time
   workflow_dispatch:
-
-  # run on every push to any branch (except output, which is written by
-  # this workflow itself and would otherwise cause an endless loop)
-  push:
-    branches-ignore:
-      - output
 
 permissions:
   contents: write
 
 jobs:
   generate:
+    if: ${{ false }} # Paused: do not run even if manually dispatched.
     runs-on: ubuntu-latest
 
     steps:
