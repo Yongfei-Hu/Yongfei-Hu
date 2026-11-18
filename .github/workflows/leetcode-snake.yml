@@ -1,0 +1,59 @@
+name: generate-leetcode-snake
+
+on:
+  schedule:
+    # Every day at 08:17 Asia/Shanghai (00:17 UTC).
+    - cron: "17 0 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "generator/**"
+      - ".github/workflows/leetcode-snake.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: leetcode-snake-output
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: generate LeetCode snake heatmap
+        env:
+          LEETCODE_USER: nostalgic-nashf7i
+        run: npx -y tsx@4.23.15 generator/run.ts
+
+      - name: checkout output branch
+        uses: actions/checkout@v4
+        with:
+          ref: output
+          path: .tmp/output
+
+      - name: publish LeetCode SVGs
+        run: |
+          cp dist/leetcode-contribution-grid-snake*.svg .tmp/output/
+          cd .tmp/output
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add leetcode-contribution-grid-snake*.svg
+          if git diff --cached --quiet; then
+            echo "LeetCode heatmap is already up to date"
+            exit 0
+          fi
+          git commit -m "update LeetCode snake heatmap"
+          git push origin HEAD:output

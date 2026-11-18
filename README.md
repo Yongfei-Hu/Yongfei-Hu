@@ -10,6 +10,6 @@
 
 ### LeetCode 刷题热力图
 
-[![LeetCode Heatmap](https://leetcard.jacoblin.cool/nostalgic-nashf7i?site=cn&ext=heatmap&cache=86400)](https://leetcode.cn/u/nostalgic-nashf7i/)
+[![LeetCode submission snake animation](https://raw.githubusercontent.com/Yongfei-Hu/Yongfei-Hu/output/leetcode-contribution-grid-snake.svg)](https://leetcode.cn/u/nostalgic-nashf7i/)
 
 在大模型推理加速与量化方向深耕，希望用技术做出有影响力的工作。
