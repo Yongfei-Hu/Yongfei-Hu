@@ -1,18 +1,20 @@
 /**
- * Generate the GitHub contribution snake animation (light + dark SVG).
+ * Generate GitHub or LeetCode contribution snake animations (light + dark SVG).
  *
  * Pipeline mirrors snk's generate-snake-animation package, with the
- * contribution source replaced by GitHub's public contribution calendar:
- *   github contributions -> cells -> grid -> solver best route -> svg
+ * contribution source replaced by a public contribution calendar:
+ *   contributions -> cells -> grid -> solver best route -> svg
  *
  * Usage:
  *   GITHUB_USER=xxx bun generator/run.ts
+ *   LEETCODE_USER=xxx npx tsx generator/run.ts
  *   bun generator/run.ts [username]
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { getGithubUserContribution, type Cell } from "./github";
+import { getLeetcodeUserContribution } from "./leetcode";
 import { getBestRoute } from "./vendor/solver/getBestRoute";
 import { getPathToPose } from "./vendor/solver/getPathToPose";
 import { createSvg, type DrawOptions } from "./vendor/svg-creator/index";
@@ -65,11 +67,14 @@ const toDrawOptions = (p: (typeof palettes)["github-light"]): DrawOptions => ({
 });
 
 const main = async () => {
-  const username = process.env.GITHUB_USER ?? process.argv[2];
-  if (!username) throw new Error("GITHUB_USER env var or username arg is required");
-  console.log(`🎣 fetching github contribution for ${username}`);
+  const source = process.env.LEETCODE_USER ? "leetcode" : "github";
+  const username = process.env.LEETCODE_USER ?? process.env.GITHUB_USER ?? process.argv[2];
+  if (!username) throw new Error("LEETCODE_USER, GITHUB_USER or username arg is required");
+  console.log(`🎣 fetching ${source} contribution for ${username}`);
 
-  const cells: Cell[] = await getGithubUserContribution(username);
+  const cells: Cell[] = await (source === "leetcode"
+    ? getLeetcodeUserContribution(username)
+    : getGithubUserContribution(username));
   const total = cells.reduce((s, c) => s + c.count, 0);
   console.log(`📊 ${total} events in the last year`);
 
@@ -85,7 +90,7 @@ const main = async () => {
 
   for (const [name, palette] of Object.entries(palettes)) {
     const suffix = name === "github-dark" ? "-dark" : "";
-    const file = path.join(outDir, `github-contribution-grid-snake${suffix}.svg`);
+    const file = path.join(outDir, `${source}-contribution-grid-snake${suffix}.svg`);
     console.log(`🖌 creating ${file}`);
     const svg = createSvg(grid, cells, chain, toDrawOptions(palette), {
       stepDurationMs: 100,
