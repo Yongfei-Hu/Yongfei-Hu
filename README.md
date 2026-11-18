@@ -8,4 +8,8 @@
 
 ![GitCode contribution snake animation](https://raw.gitcode.com/yongfei-hu/yongfei-hu/raw/output/gitcode-contribution-grid-snake.svg)
 
+### LeetCode 刷题热力图
+
+[![LeetCode Heatmap](https://leetcard.jacoblin.cool/nostalgic-nashf7i?site=cn&ext=heatmap&cache=86400)](https://leetcode.cn/u/nostalgic-nashf7i/)
+
 在大模型推理加速与量化方向深耕，希望用技术做出有影响力的工作。
